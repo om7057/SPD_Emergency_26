@@ -13,25 +13,25 @@ function Home() {
   useEffect(() => {
     const fetchUserProgress = async () => {
       if (!user) {
-        console.warn("⚠️ No user found, skipping API call.");
+        console.warn("No user found, skipping API call.");
         return;
       }
 
-      console.log("✅ Fetching user progress for Clerk ID:", user.id);
+      console.log("Fetching user progress for Clerk ID:", user.id);
 
       try {
         const response = await fetch(`http://localhost:5000/api/users/${user.id}`);
-        console.log("✅ Response status:", response.status);
+        console.log("Response status:", response.status);
 
         if (!response.ok) {
-          throw new Error("❌ Failed to fetch user progress");
+          throw new Error("Failed to fetch user progress");
         }
 
         const data = await response.json();
-        console.log("✅ Fetched User Data:", data);
+        console.log("Fetched User Data:", data);
         setUserData(data);
       } catch (error) {
-        console.error("❌ Error fetching user progress:", error);
+        console.error("Error fetching user progress:", error);
       } finally {
         setLoading(false);
       }
@@ -46,7 +46,6 @@ function Home() {
         Welcome to Learning App
       </h1>
 
-      {/* User Profile Section */}
       {isSignedIn ? (
         <div className="bg-white rounded-lg shadow-md p-4 md:p-6">
           <div className="flex items-center space-x-4">
@@ -69,7 +68,6 @@ function Home() {
         <p className="text-red-500">User not logged in.</p>
       )}
 
-      {/* Loading State */}
       {loading ? (
         <p className="text-center text-gray-600 mt-4">Loading user progress...</p>
       ) : userData ? (

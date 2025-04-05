@@ -11,7 +11,7 @@ const userSchema = new mongoose.Schema({
 
   unlockedLevels: [{ type: mongoose.Schema.Types.ObjectId, ref: 'StoryLevel' }],
   completedLevels: [{ type: mongoose.Schema.Types.ObjectId, ref: 'StoryLevel' }],
-  completedStories: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Story' }], 
+  completedStories: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Story' }], // ✅ NEW
   currentStars: { type: Number, default: 0 }
 });
 

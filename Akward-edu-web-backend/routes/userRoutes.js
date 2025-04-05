@@ -10,7 +10,6 @@ import {
 
 const router = express.Router();
 
-
 router.post('/', createOrUpdateUser);
 router.get('/', getAllUsers); 
 router.get('/clerk/:clerkId', getUserByClerkId); 

@@ -9,7 +9,7 @@ const ProfilePage = () => {
 
   const handleLogout = async () => {
     await signOut();
-    navigate("/login"); 
+    navigate("/login"); // Redirect to login after logout
   };
 
   return (

@@ -20,6 +20,7 @@ const StoryLearning = () => {
       });
   }, []);
 
+  // Helper function to get appropriate emoji for each topic
   const getTopicEmoji = (topicName) => {
     const name = topicName.toLowerCase();
     if (name.includes("abuse")) return "🛡️";
@@ -30,6 +31,7 @@ const StoryLearning = () => {
     return "📚";
   };
 
+  // Helper function to get appropriate color scheme for each topic
   const getTopicColors = (topicName) => {
     const name = topicName?.toLowerCase() || "";
     if (name.includes("abuse")) 

@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import useEmotionDetection from "../components/useEmotionDetection";
 import EmotionChart from "./EmotionChart";
@@ -44,10 +44,17 @@ const StoryPlayer = () => {
       .getUserMedia({ video: true })
       .then((stream) => {
         localStream = stream;
-        if (videoRef.current) {
-          videoRef.current.srcObject = stream;
-        }
-        startDetection(); 
+
+        const waitForVideoRef = () => {
+          if (videoRef.current) {
+            videoRef.current.srcObject = stream;
+          } else {
+            requestAnimationFrame(waitForVideoRef);
+          }
+        };
+        waitForVideoRef();
+
+        startDetection();
       })
       .catch((err) => {
         console.error("🚫 Error accessing webcam:", err);
@@ -56,32 +63,50 @@ const StoryPlayer = () => {
     return () => {
       if (videoRef.current && videoRef.current.srcObject) {
         videoRef.current.srcObject.getTracks().forEach((track) => track.stop());
+        videoRef.current.srcObject = null;
+        console.log("📷 Video stream stopped on unmount");
       }
       stopDetection();
     };
   }, [videoRef, startDetection, stopDetection]);
 
-  const handleOptionClick = (nextIndex) => {
-    if (nextIndex < 0 || nextIndex >= story.scenes.length) {
-      alert("That path doesn't exist. Ending story.");
+  useEffect(() => {
+    // Auto-complete if no options exist in current scene
+    if (story && story.scenes[currentSceneIndex].options.length === 0) {
+      console.log("🎉 Scene has no options, auto-ending story");
       setStoryCompleted(true);
       stopDetection();
+    }
+  }, [currentSceneIndex, story, stopDetection]);
+
+  const handleOptionClick = (nextIndex, optionText) => {
+    console.log("👉 Option clicked:", optionText, "| nextIndex:", nextIndex);
+    const isEnding = optionText.toLowerCase().includes("end") || nextIndex === -1;
+
+    if (isEnding) {
+      console.log("✅ Ending story due to option:", optionText);
+      stopDetection();
+
+      if (videoRef.current && videoRef.current.srcObject) {
+        videoRef.current.srcObject.getTracks().forEach((track) => track.stop());
+        videoRef.current.srcObject = null;
+        console.log("📷 Video stream stopped");
+      }
+
+      setStoryCompleted(true);
       return;
     }
-    
+
+    if (nextIndex < 0 || nextIndex >= story.scenes.length) {
+      alert("Invalid story path.");
+      return;
+    }
+
     setSceneTransition(true);
     setTimeout(() => {
       setCurrentSceneIndex(nextIndex);
       setSceneTransition(false);
     }, 500);
-  };
-
-  const handleShowAnalysis = () => {
-    stopDetection();
-    if (videoRef.current && videoRef.current.srcObject) {
-      videoRef.current.srcObject.getTracks().forEach((track) => track.stop());
-    }
-    setStoryCompleted(true);
   };
 
   if (loading) return (
@@ -92,7 +117,7 @@ const StoryPlayer = () => {
       </div>
     </div>
   );
-  
+
   if (error) return (
     <div className="max-w-4xl mx-auto p-6 bg-blue-50 min-h-screen flex items-center justify-center">
       <div className="bg-white rounded-2xl shadow-lg p-8 text-center border-4 border-red-300">
@@ -108,7 +133,7 @@ const StoryPlayer = () => {
       </div>
     </div>
   );
-  
+
   if (!story) return (
     <div className="max-w-4xl mx-auto p-6 bg-blue-50 min-h-screen flex items-center justify-center">
       <div className="bg-white rounded-2xl shadow-lg p-8 text-center border-4 border-yellow-300">
@@ -125,6 +150,7 @@ const StoryPlayer = () => {
   );
 
   const currentScene = story.scenes[currentSceneIndex];
+  console.log("🎬 Current Scene Index:", currentSceneIndex, "| Title:", currentScene.title);
 
   const getSceneBackground = () => {
     const title = currentScene.title.toLowerCase();
@@ -140,7 +166,6 @@ const StoryPlayer = () => {
   return (
     <div className="max-w-4xl mx-auto p-6 bg-blue-50 min-h-screen">
       <div className="bg-white rounded-2xl shadow-lg p-6 border-4 border-purple-300 relative">
-        
         <div className="mb-6 text-center">
           <h1 className="text-3xl font-bold text-purple-700 mb-2">{story.title}</h1>
           <p className="text-gray-600">{story.description}</p>
@@ -178,7 +203,7 @@ const StoryPlayer = () => {
               <button
                 key={index}
                 className="block w-full text-left bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 text-white py-3 px-5 rounded-full font-medium transition-all duration-300 hover:shadow-md hover:scale-102"
-                onClick={() => handleOptionClick(option.to)}
+                onClick={() => handleOptionClick(option.to, option.text)}
               >
                 <span className="mr-2">{index === 0 ? '🅰️' : index === 1 ? '🅱️' : '🅲️'}</span> {option.text}
               </button>
@@ -189,12 +214,6 @@ const StoryPlayer = () => {
             <div className="mt-8 text-center">
               <div className="inline-block text-5xl mb-4">🎉</div>
               <p className="font-bold text-green-600 text-2xl mb-4">Story Complete!</p>
-              <button
-                className="px-8 py-3 bg-gradient-to-r from-green-500 to-teal-500 text-white rounded-full hover:from-green-600 hover:to-teal-600 font-bold shadow-md transition-all hover:scale-105"
-                onClick={handleShowAnalysis}
-              >
-                See My Emotion Report <span className="ml-1">👀</span>
-              </button>
             </div>
           )}
         </div>
@@ -203,7 +222,6 @@ const StoryPlayer = () => {
           <div className="mt-8 p-6 bg-gradient-to-b from-blue-50 to-purple-50 rounded-xl border-2 border-blue-200">
             <h2 className="text-2xl font-bold text-center text-purple-700 mb-6">Your Emotion Journey</h2>
             <EmotionChart emotionTimeline={emotionTimeline} />
-            
             <div className="mt-8 text-center">
               <button
                 onClick={() => navigate(`/quiz/${storyId}`)}
@@ -215,7 +233,7 @@ const StoryPlayer = () => {
           </div>
         )}
       </div>
-      
+
       <div className="mt-6 text-center">
         <button 
           onClick={() => navigate(-1)}

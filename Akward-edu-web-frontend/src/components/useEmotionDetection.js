@@ -13,10 +13,10 @@ const useEmotionDetection = () => {
       try {
         await faceapi.nets.tinyFaceDetector.loadFromUri(MODEL_URL);
         await faceapi.nets.faceExpressionNet.loadFromUri(MODEL_URL);
-        console.log("FaceAPI models loaded");
+        console.log("✅ FaceAPI models loaded");
         setLoading(false);
       } catch (err) {
-        console.error("Error loading models:", err);
+        console.error("❌ Error loading models:", err);
       }
     };
 
@@ -37,7 +37,7 @@ const useEmotionDetection = () => {
           a[1] > b[1] ? a : b
         )[0];
 
-        console.log("Detected emotion:", dominantEmotion);
+        console.log("😶 Detected emotion:", dominantEmotion);
         setEmotionTimeline((prev) => [
           ...prev,
           { time: new Date().toISOString(), emotion: dominantEmotion },

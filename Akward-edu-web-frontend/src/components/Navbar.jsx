@@ -17,29 +17,29 @@ const Navbar = () => {
     <nav className="bg-gradient-to-r from-blue-500 to-purple-500 shadow-lg">
       <div className="max-w-6xl mx-auto px-4">
         <div className="flex justify-between items-center h-16">
-          <Link to="/" className="flex items-center space-x-2">
+          <Link to="/" className="flex items-center space-x-2 transform hover:scale-105 transition-all">
             <span className="text-2xl">🌟</span>
             <span className="text-xl font-bold text-white">Kids Learning Hub</span>
           </Link>
 
-          <div className="hidden md:flex space-x-1">
+          <div className="hidden md:flex space-x-2">
             {navLinks.map((link) => (
               <Link
                 key={link.path}
                 to={link.path}
-                className={`px-3 py-2 rounded-md text-sm font-medium transition-all ${
+                className={`px-4 py-2 rounded-full text-base font-medium transition-all transform hover:scale-105 ${
                   location.pathname === link.path
                     ? "bg-white bg-opacity-20 text-white"
                     : "text-white hover:bg-white hover:bg-opacity-10"
                 }`}
               >
-                <span className="mr-1">{link.icon}</span>
+                <span className="mr-2">{link.icon}</span>
                 {link.name}
               </Link>
             ))}
           </div>
 
-          <div className="flex items-center space-x-4">
+          <div className="flex items-center space-x-3">
             <SignedOut>
               <Link 
                 to="/login" 
@@ -49,7 +49,7 @@ const Navbar = () => {
               </Link>
               <Link 
                 to="/signup" 
-                className="hidden md:inline-block bg-yellow-400 text-blue-800 px-4 py-2 rounded-full font-medium shadow hover:bg-yellow-300 transition-all transform hover:scale-105"
+                className="hidden md:inline-block bg-yellow-400 text-purple-600 px-4 py-2 rounded-full font-medium shadow hover:bg-yellow-300 transition-all transform hover:scale-105"
               >
                 Join Us!
               </Link>
@@ -57,11 +57,11 @@ const Navbar = () => {
 
             <SignedIn>
               <div className="flex items-center space-x-3">
-                <span className="hidden md:inline-block text-white text-sm">My Account</span>
+                <span className="hidden md:inline-block text-white text-base font-medium">My Account</span>
                 <UserButton 
                   appearance={{
                     elements: {
-                      userButtonAvatarBox: "border-2 border-white",
+                      userButtonAvatarBox: "border-2 border-white rounded-full",
                     }
                   }}
                 />
@@ -70,12 +70,12 @@ const Navbar = () => {
 
             <button
               onClick={() => setIsMenuOpen(!isMenuOpen)}
-              className="md:hidden text-white focus:outline-none"
+              className="md:hidden text-white focus:outline-none bg-purple-600 bg-opacity-30 p-2 rounded-full transform hover:scale-105 transition-all"
             >
               {isMenuOpen ? (
-                <span className="text-2xl">✖️</span>
+                <span className="text-xl">✖️</span>
               ) : (
-                <span className="text-2xl">☰</span>
+                <span className="text-xl">☰</span>
               )}
             </button>
           </div>
@@ -88,7 +88,7 @@ const Navbar = () => {
                 <Link
                   key={link.path}
                   to={link.path}
-                  className={`px-3 py-2 rounded-md text-base font-medium ${
+                  className={`px-4 py-3 rounded-full text-base font-medium transition-all ${
                     location.pathname === link.path
                       ? "bg-white bg-opacity-20 text-white"
                       : "text-white hover:bg-white hover:bg-opacity-10"
@@ -102,7 +102,7 @@ const Navbar = () => {
               <SignedOut>
                 <Link 
                   to="/signup" 
-                  className="mt-3 block md:hidden text-center bg-yellow-400 text-blue-800 px-4 py-2 rounded-full font-medium"
+                  className="mt-3 block md:hidden text-center bg-yellow-400 text-purple-600 px-4 py-3 rounded-full font-medium shadow transform hover:scale-105 transition-all"
                   onClick={() => setIsMenuOpen(false)}
                 >
                   Join Us!

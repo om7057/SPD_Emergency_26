@@ -13,7 +13,7 @@ const Leaderboard = () => {
     const fetchData = async () => {
       setIsLoading(true);
       try {
-        console.log("📢 Fetching initial leaderboard data...");
+        console.log("Fetching initial leaderboard data...");
         const responses = await Promise.all([
           fetch("http://localhost:5000/api/users"),
           fetch("http://localhost:5000/api/stories"),
@@ -21,16 +21,16 @@ const Leaderboard = () => {
         ]);
 
         if (responses.some((res) => !res.ok)) {
-          throw new Error("❌ One or more API requests failed.");
+          throw new Error("One or more API requests failed.");
         }
 
         const [usersData, storiesData, leaderboardData] = await Promise.all(
           responses.map((res) => res.json())
         );
 
-        console.log("✅ Users fetched:", usersData);
-        console.log("✅ Stories fetched:", storiesData);
-        console.log("✅ Leaderboard fetched:", leaderboardData);
+        console.log("Users fetched:", usersData);
+        console.log("Stories fetched:", storiesData);
+        console.log("Leaderboard fetched:", leaderboardData);
 
         setUsers(usersData);
         setStories(storiesData);
@@ -38,7 +38,7 @@ const Leaderboard = () => {
         setFilteredScores(leaderboardData);
         setErrorMessage("");
       } catch (err) {
-        console.error("❌ Error fetching initial data:", err);
+        console.error("Error fetching initial data:", err);
         setErrorMessage("Oops! We couldn't load the learning heroes board. Try again later!");
       } finally {
         setIsLoading(false);
@@ -57,24 +57,24 @@ const Leaderboard = () => {
           url = `http://localhost:5000/api/leaderboard/story/${selectedStory}`;
         }
 
-        console.log(`📢 Fetching leaderboard for story: ${selectedStory || "All"}`);
+        console.log(`Fetching leaderboard for story: ${selectedStory || "All"}`);
 
         const res = await fetch(url);
         const data = await res.json();
 
         if (!res.ok) {
-          console.error("❌ Error loading leaderboard:", data.error || "Unknown error");
+          console.error("Error loading leaderboard:", data.error || "Unknown error");
           setFilteredScores([]);
           setErrorMessage("No learning heroes found for this topic yet. Be the first one!");
           return;
         }
 
-        console.log("✅ Leaderboard updated:", data);
+        console.log("Leaderboard updated:", data);
         setScores(data);
         setFilteredScores(data);
         setErrorMessage("");
       } catch (err) {
-        console.error("❌ Error fetching leaderboard:", err);
+        console.error("Error fetching leaderboard:", err);
         setFilteredScores([]);
         setErrorMessage("No learning heroes found for this topic yet. Be the first one!");
       } finally {
@@ -86,8 +86,8 @@ const Leaderboard = () => {
   }, [selectedStory]);
 
   useEffect(() => {
-    console.log("📊 Scores state updated:", scores);
-    console.log("📊 Filtered Scores updated:", filteredScores);
+    console.log("Scores state updated:", scores);
+    console.log("Filtered Scores updated:", filteredScores);
   }, [scores, filteredScores]);
 
   const getUser = (userId) => {
@@ -103,9 +103,9 @@ const Leaderboard = () => {
 
   const getTrophyColor = (index) => {
     const colors = [
-      "from-yellow-300 to-yellow-500", // gold
-      "from-gray-300 to-gray-500",     // silver
-      "from-amber-600 to-amber-800"    // bronze
+      "from-yellow-300 to-yellow-500",
+      "from-gray-300 to-gray-500",    
+      "from-amber-600 to-amber-800"    
     ];
     return index < 3 ? colors[index] : "from-blue-300 to-blue-500";
   };

@@ -38,7 +38,7 @@ const Levels = () => {
     fetchLevels();
   }, [topicId]);
 
-  const levelColors = [
+const levelColors = [
     "from-blue-400 to-blue-500",
     "from-green-400 to-green-500",
     "from-yellow-400 to-yellow-500",

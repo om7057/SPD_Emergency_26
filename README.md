@@ -1,4 +1,7 @@
 
+TweetNLP Dataset : https://aclanthology.org/2022.emnlp-demos.5/
+
+
 # 🌟 Learning App Frontend
 
 This is the **frontend** of a learning platform built using **React + Vite + Tailwind CSS**. It includes story-based and quiz-based learning features, a leaderboard, latest news section, and user authentication via Clerk.

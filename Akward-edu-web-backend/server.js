@@ -27,13 +27,11 @@ app.use(cors({
 }));
 app.use(express.json());
 
-// Logging
 app.use((req, res, next) => {
   console.log(`${req.method} ${req.url}`);
   next();
 });
 
-// ✅ Routes
 app.use('/api/users', userRoutes);
 app.use('/api/topics', topicRoutes);
 app.use('/api/stories', storyRoutes);
@@ -44,7 +42,6 @@ app.use('/api/news-stories', newsStoryRoutes);
 app.use('/api/quiz-progress', progressRoutes)
 
 
-// ✅ ⬇️ Moved these to the bottom (important!)
 app.use((req, res) => {
   res.status(404).json({ message: 'Route not found' });
 });
@@ -55,5 +52,5 @@ app.use((err, req, res, next) => {
 });
 
 app.listen(PORT, () => {
-  console.log(`✅ Server running on port ${PORT}`);
+  console.log(`Server running on port ${PORT}`);
 });

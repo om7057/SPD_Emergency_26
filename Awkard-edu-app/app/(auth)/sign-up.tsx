@@ -8,19 +8,32 @@ export default function SignUp() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [displayName, setDisplayName] = useState('');
+  const [age, setAge] = useState('');
+  const [gender, setGender] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const { signUp } = useAuth();
 
   const handleSignUp = async () => {
     // Basic validation
-    if (!email || !password || !displayName) {
+    if (!email || !password || !displayName || !age || !gender) {
       Alert.alert('Error', 'Please fill out all fields');
       return;
     }
-
+    
+    const ageNum = parseInt(age);
+    if (isNaN(ageNum) || ageNum < 13 || ageNum > 100) {
+      Alert.alert('Error', 'Age must be between 13 and 100');
+      return;
+    }
+    
+    if (!['male', 'female', 'other'].includes(gender.toLowerCase())) {
+      Alert.alert('Error', 'Gender must be male, female, or other');
+      return;
+    }
+    
     setIsLoading(true);
     try {
-      await signUp(email, password, displayName);
+      await signUp(email, password, displayName, ageNum, gender.toLowerCase());
       Alert.alert('Success', 'Please check your email to confirm your account');
       router.replace('/sign-in');
     } catch (error) {
@@ -29,6 +42,7 @@ export default function SignUp() {
     } finally {
       setIsLoading(false);
     }
+    
   };
 
   return (
@@ -59,6 +73,23 @@ export default function SignUp() {
         secureTextEntry
         placeholderTextColor="#666"
       />
+      <TextInput
+        style={styles.input}
+        placeholder="Age"
+        value={age}
+        onChangeText={setAge}
+        keyboardType="numeric"
+        placeholderTextColor="#666"
+      />
+      <TextInput
+        style={styles.input}
+        placeholder="Gender (male/female/other)"
+        value={gender}
+        onChangeText={setGender}
+        autoCapitalize="none"
+        placeholderTextColor="#666"
+      />
+
       <TouchableOpacity 
         style={styles.button} 
         onPress={handleSignUp}

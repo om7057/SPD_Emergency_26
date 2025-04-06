@@ -12,9 +12,10 @@ import {
   StatusBar,
   FlatList
 } from 'react-native';
-import { Feather } from '@expo/vector-icons';
+import { Feather, Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../../contexts/AuthContext';
 import { API_URL } from '../../constants';
+import { supabase } from '../../lib/supabase';
 
 interface JournalEntry {
   entry_id: string;
@@ -22,6 +23,11 @@ interface JournalEntry {
   content: string;
   created_at: string;
   updated_at: string;
+}
+
+interface SuggestedGroup {
+  group_name: string;
+  query_count: number;
 }
 
 export default function JournalScreen() {
@@ -34,6 +40,8 @@ export default function JournalScreen() {
   const [content, setContent] = useState('');
   const [currentEntryId, setCurrentEntryId] = useState<string | null>(null);
   const [sidebarVisible, setSidebarVisible] = useState(false);
+  const [suggestedGroups, setSuggestedGroups] = useState([]);
+  const [loadingGroups, setLoadingGroups] = useState(false);
   
   // Fetch journal entries on component mount
   useEffect(() => {
@@ -200,6 +208,63 @@ export default function JournalScreen() {
 
   const toggleSidebar = () => {
     setSidebarVisible(!sidebarVisible);
+    
+    // If opening the sidebar, automatically load suggested groups
+    if (!sidebarVisible) {
+      loadSuggestedGroups();
+    }
+  };
+
+  const loadSuggestedGroups = async () => {
+    try {
+      setLoadingGroups(true);
+      
+      // Get user ID with proper error handling
+      const { data: userData } = await supabase.auth.getUser();
+      if (!userData?.user?.id) {
+        throw new Error('User not authenticated');
+      }
+      const userId = userData.user.id;
+      
+      // Get session token with proper error handling
+      const { data: sessionData } = await supabase.auth.getSession();
+      if (!sessionData?.session?.access_token) {
+        throw new Error('No valid session');
+      }
+      const token = sessionData.session.access_token;
+      
+      // First analyze queries to get group suggestions
+      const analyzeResponse = await fetch(`${API_URL}/api/users/${userId}/analyze-queries`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+      
+      if (!analyzeResponse.ok) {
+        throw new Error('Failed to analyze queries');
+      }
+      
+      // Then get the suggested groups
+      const groupsResponse = await fetch(`${API_URL}/api/users/${userId}/suggested-groups`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      
+      if (!groupsResponse.ok) {
+        throw new Error('Failed to fetch suggested groups');
+      }
+      
+      const data = await groupsResponse.json();
+      setSuggestedGroups(data.suggestions || []);
+    } catch (error) {
+      console.error('Error loading suggested groups:', error);
+      Alert.alert('Error', 'Failed to load suggested groups');
+    } finally {
+      setLoadingGroups(false);
+    }
   };
 
   const renderEntryItem = ({ item }: { item: JournalEntry }) => {
@@ -236,14 +301,32 @@ export default function JournalScreen() {
           <View style={styles.sidebarHeader}>
             <Text style={styles.sidebarTitle}>Daily Journal</Text>
             <TouchableOpacity onPress={toggleSidebar}>
-              <Feather name="x" size={24} color="#37352f" />
+              <Ionicons name="close" size={24} color="#333" />
             </TouchableOpacity>
           </View>
           
           <TouchableOpacity style={styles.sidebarItem}>
-            <Feather name="book" size={18} color="#37352f" />
+            <Ionicons name="book-outline" size={20} color="#666" />
             <Text style={styles.sidebarItemText}>All Entries</Text>
           </TouchableOpacity>
+          
+          {/* Suggested Groups Section */}
+          <View style={styles.suggestedGroupsSection}>
+            <Text style={styles.sectionTitle}>Suggested Groups</Text>
+            {loadingGroups ? (
+              <ActivityIndicator size="small" color="#0000ff" />
+            ) : suggestedGroups.length > 0 ? (
+              suggestedGroups.map((group: SuggestedGroup, index) => (
+                <TouchableOpacity key={index} style={styles.groupItem}>
+                  <Ionicons name="people-outline" size={20} color="#666" />
+                  <Text style={styles.groupItemText}>{group.group_name}</Text>
+                  <Text style={styles.groupCountText}>({group.query_count} queries)</Text>
+                </TouchableOpacity>
+              ))
+            ) : (
+              <Text style={styles.noGroupsText}>No suggested groups yet</Text>
+            )}
+          </View>
         </View>
       )}
       
@@ -543,5 +626,40 @@ const styles = StyleSheet.create({
     lineHeight: 24,
     padding: 0,
     minHeight: 300,
+  },
+  suggestedGroupsSection: {
+    marginTop: 20,
+    paddingHorizontal: 15,
+  },
+  sectionTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#333',
+    marginBottom: 10,
+  },
+  groupItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 8,
+    paddingHorizontal: 10,
+    borderRadius: 6,
+    marginBottom: 5,
+  },
+  groupItemText: {
+    marginLeft: 10,
+    fontSize: 14,
+    color: '#333',
+    flex: 1,
+  },
+  groupCountText: {
+    fontSize: 12,
+    color: '#666',
+  },
+  noGroupsText: {
+    fontSize: 14,
+    color: '#666',
+    fontStyle: 'italic',
+    textAlign: 'center',
+    marginTop: 10,
   },
 });

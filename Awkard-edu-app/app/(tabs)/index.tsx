@@ -1,4 +1,4 @@
-import { View, Text, StyleSheet, TouchableOpacity, Alert, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Alert, ScrollView, TextInput } from 'react-native';
 import { useAuth } from '../../contexts/AuthContext';
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -11,25 +11,114 @@ export default function ProfileScreen() {
   const [analysisData, setAnalysisData] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [analysisLoading, setAnalysisLoading] = useState(true);
+  const [verificationStatus, setVerificationStatus] = useState<any>(null);
+  const [checkingVerification, setCheckingVerification] = useState(false);
+  const [verificationLoading, setVerificationLoading] = useState(true);
+  const [isEditing, setIsEditing] = useState(false);
+  const [editedProfile, setEditedProfile] = useState({
+    display_name: '',
+    age: '',
+    gender: ''
+  });
 
   useEffect(() => {
-    fetchUserData();
-    fetchAnalysisData();
-  }, []);
+    // First fetch user data, then verification status, then analysis data
+    const loadData = async () => {
+      try {
+        if (session?.user?.id) {
+          console.log('Session and user ID available, loading data...');
+          // First fetch user data
+          await fetchUserData();
+          console.log('User data loaded, fetching verification status...');
+          // Then fetch verification status
+          await fetchVerificationStatus();
+          console.log('Verification status loaded, fetching analysis data...');
+          // Finally fetch analysis data
+          await fetchAnalysisData();
+          console.log('All data loaded successfully');
+        } else {
+          console.log('No session or user ID available');
+          setLoading(false);
+          setVerificationLoading(false);
+          setAnalysisLoading(false);
+        }
+      } catch (error) {
+        console.error('Error loading data:', error);
+        setLoading(false);
+        setVerificationLoading(false);
+        setAnalysisLoading(false);
+      }
+    };
+    
+    loadData();
+  }, [session]);
+
+  // Update editedProfile when userData changes
+  useEffect(() => {
+    if (userData) {
+      setEditedProfile({
+        display_name: userData.display_name || '',
+        age: userData.age?.toString() || '',
+        gender: userData.gender || ''
+      });
+    }
+  }, [userData]);
 
   const fetchUserData = async () => {
     try {
       if (!session?.user?.id) return;
 
-      const response = await fetch(`${API_URL}/users/${session.user.id}`);
+      console.log('Fetching user data for:', session.user.id);
+      const response = await fetch(`${API_URL}/users/${session.user.id}`, {
+        headers: {
+          'Authorization': `Bearer ${session.access_token}`
+        }
+      });
+      
       if (!response.ok) {
         throw new Error('Failed to fetch user data');
       }
+      
       const data = await response.json();
+      console.log('User data received:', data);
       setUserData(data);
     } catch (error) {
       console.error('Error fetching user data:', error);
       Alert.alert('Error', 'Failed to load user data');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleUpdateProfile = async () => {
+    try {
+      setLoading(true);
+      if (!session?.user?.id) return;
+
+      const response = await fetch(`${API_URL}/users/${session.user.id}`, {
+        method: 'PUT',
+        headers: {
+          'Authorization': `Bearer ${session.access_token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          display_name: editedProfile.display_name,
+          age: editedProfile.age ? parseInt(editedProfile.age) : null,
+          gender: editedProfile.gender
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to update profile');
+      }
+
+      // Refresh the user data
+      await fetchUserData();
+      setIsEditing(false);
+      Alert.alert('Success', 'Profile updated successfully');
+    } catch (error) {
+      console.error('Error updating profile:', error);
+      Alert.alert('Error', 'Failed to update profile');
     } finally {
       setLoading(false);
     }
@@ -59,23 +148,120 @@ export default function ProfileScreen() {
       setAnalysisLoading(false);
     }
   };
-
-  const handleSignOut = async () => {
+  const fetchVerificationStatus = async () => {
     try {
-      setLoading(true);
-      await signOut();
-      // The root layout will handle the navigation after session is cleared
+      setVerificationLoading(true);
+      
+      if (!session?.access_token) {
+        console.log('No access token available');
+        return;
+      }
+
+      console.log('Fetching verification status...');
+      const response = await fetch(`${API_URL}/users/verification-status`, {
+        headers: {
+          'Authorization': `Bearer ${session.access_token}`,
+        },
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('Response not OK:', response.status, errorText);
+        throw new Error(`Failed to fetch verification status: ${response.status}`);
+      }
+
+      const data = await response.json();
+      console.log('Verification status received:', data);
+      setVerificationStatus(data);
     } catch (error) {
-      console.error('Sign out error:', error);
-      Alert.alert('Error', 'Failed to sign out. Please try again.');
+      console.error('Error fetching verification status:', error);
+      // Don't show alert to avoid spamming the user
     } finally {
-      setLoading(false);
+      setVerificationLoading(false);
+    }
+  };
+  const checkVerificationEligibility = async () => {
+    try {
+      setCheckingVerification(true);
+      if (!session?.user?.id) return;
+
+      const response = await fetch(`${API_URL}/users/${session.user.id}/verify-eligibility`, {
+        headers: {
+          'Authorization': `Bearer ${session.access_token}`
+        }
+      });
+      
+      const data = await response.json();
+      
+      if (response.ok) {
+        if (data.eligible) {
+          Alert.alert(
+            'Verification Eligible',
+            'You are eligible for verification! Would you like to verify your account now?',
+            [
+              {
+                text: 'Cancel',
+                style: 'cancel',
+              },
+              {
+                text: 'Verify Now',
+                onPress: requestVerification,
+              },
+            ]
+          );
+        } else {
+          Alert.alert(
+            'Not Eligible',
+            `${data.reason}. You need at least one post with 2 or more likes.`
+          );
+        }
+      } else {
+        Alert.alert('Error', data.error || 'Failed to check verification eligibility');
+      }
+    } catch (error) {
+      console.error('Error checking verification eligibility:', error);
+      Alert.alert('Error', 'Failed to check verification eligibility');
+    } finally {
+      setCheckingVerification(false);
+    }
+  };
+
+  const requestVerification = async () => {
+    try {
+      setCheckingVerification(true);
+      if (!session?.user?.id) return;
+
+      const response = await fetch(`${API_URL}/users/${session.user.id}/verify`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${session.access_token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+      
+      const data = await response.json();
+      
+      if (response.ok) {
+        Alert.alert(
+          'Success',
+          'Your account has been verified successfully!'
+        );
+        // Refresh verification status
+        fetchVerificationStatus();
+      } else {
+        Alert.alert('Error', data.error || 'Failed to verify account');
+      }
+    } catch (error) {
+      console.error('Error requesting verification:', error);
+      Alert.alert('Error', 'Failed to verify account');
+    } finally {
+      setCheckingVerification(false);
     }
   };
 
   // Helper function to get color based on emotion
-  const getEmotionColor = (emotion) => {
-    const emotions = {
+  const getEmotionColor = (emotion: string): string => {
+    const emotions: Record<string, string> = {
       'Happy': '#4CAF50',
       'Sad': '#2196F3',
       'Angry': '#F44336',
@@ -90,31 +276,151 @@ export default function ProfileScreen() {
   return (
     <ScrollView style={styles.container}>
       <View style={styles.header}>
-        <Ionicons name="person-circle-outline" size={80} color="#007AFF" />
-        <Text style={styles.title}>Profile</Text>
+        <View style={styles.profileImageContainer}>
+          <Ionicons name="person-circle" size={90} color="#262626" />
+          {verificationStatus?.isVerified && (
+            <View style={styles.verifiedBadge}>
+              <Ionicons name="checkmark-circle" size={20} color="#fff" />
+            </View>
+          )}
+        </View>
+        <Text style={styles.username}>{userData?.display_name || 'User'}</Text>
+        {verificationStatus?.isVerified && (
+          <View style={styles.verifiedPill}>
+            <Ionicons name="checkmark-circle" size={14} color="#0095f6" />
+            <Text style={styles.verifiedPillText}>Verified</Text>
+          </View>
+        )}
       </View>
 
       {loading ? (
-        <View style={styles.noProfile}>
-          <Text style={styles.noProfileText}>Loading profile...</Text>
+        <View style={styles.loadingContainer}>
+          <Text style={styles.loadingText}>Loading profile...</Text>
         </View>
       ) : userData ? (
         <View style={styles.profileInfo}>
-          <View style={styles.infoSection}>
-            <Text style={styles.label}>Display Name</Text>
-            <Text style={styles.value}>{userData.display_name}</Text>
-          </View>
+          <View style={styles.infoCard}>
+            <View style={styles.infoSection}>
+              <Text style={styles.label}>Display Name</Text>
+              {isEditing ? (
+                <TextInput
+                  style={styles.input}
+                  value={editedProfile.display_name}
+                  onChangeText={(text) => setEditedProfile(prev => ({ ...prev, display_name: text }))}
+                  placeholder="Enter your display name"
+                />
+              ) : (
+                <Text style={styles.value}>{userData.display_name}</Text>
+              )}
+            </View>
 
-          <View style={styles.infoSection}>
-            <Text style={styles.label}>Email</Text>
-            <Text style={styles.value}>{userData.email}</Text>
-          </View>
+            <View style={styles.infoSection}>
+              <Text style={styles.label}>Age</Text>
+              {isEditing ? (
+                <TextInput
+                  style={styles.input}
+                  value={editedProfile.age}
+                  onChangeText={(text) => setEditedProfile(prev => ({ ...prev, age: text }))}
+                  placeholder="Enter your age"
+                  keyboardType="numeric"
+                />
+              ) : (
+                <Text style={styles.value}>{userData.age || 'Not set'}</Text>
+              )}
+            </View>
 
-          <View style={styles.infoSection}>
-            <Text style={styles.label}>Member Since</Text>
-            <Text style={styles.value}>
-              {new Date(userData.created_at).toLocaleDateString()}
-            </Text>
+            <View style={styles.infoSection}>
+              <Text style={styles.label}>Gender</Text>
+              {isEditing ? (
+                <TextInput
+                  style={styles.input}
+                  value={editedProfile.gender}
+                  onChangeText={(text) => setEditedProfile(prev => ({ ...prev, gender: text }))}
+                  placeholder="Enter your gender"
+                />
+              ) : (
+                <Text style={styles.value}>{userData.gender || 'Not set'}</Text>
+              )}
+            </View>
+
+            {/* Update/Save buttons moved here, below gender and above email */}
+            {isEditing ? (
+              <View style={styles.actionButtonsContainer}>
+                <TouchableOpacity 
+                  style={[styles.actionButton, styles.saveButton]} 
+                  onPress={handleUpdateProfile}
+                  disabled={loading}
+                >
+                  <Text style={styles.actionButtonText}>Save</Text>
+                </TouchableOpacity>
+                <TouchableOpacity 
+                  style={[styles.actionButton, styles.cancelButton]} 
+                  onPress={() => {
+                    setIsEditing(false);
+                    setEditedProfile({
+                      display_name: userData.display_name || '',
+                      age: userData.age?.toString() || '',
+                      gender: userData.gender || ''
+                    });
+                  }}
+                >
+                  <Text style={styles.actionButtonText}>Cancel</Text>
+                </TouchableOpacity>
+              </View>
+            ) : (
+              <TouchableOpacity 
+                style={[styles.actionButton, styles.editButton]} 
+                onPress={() => setIsEditing(true)}
+              >
+                <Text style={styles.actionButtonText}>Edit Profile</Text>
+              </TouchableOpacity>
+            )}
+
+            <View style={styles.infoSection}>
+              <Text style={styles.label}>Email</Text>
+              <Text style={styles.value}>{userData.email}</Text>
+            </View>
+
+            <View style={styles.infoSection}>
+              <Text style={styles.label}>Member Since</Text>
+              <Text style={styles.value}>
+                {userData.created_at ? new Date(userData.created_at).toLocaleDateString() : 'Not available'}
+              </Text>
+            </View>
+
+            <View style={styles.infoSection}>
+              <View style={styles.verificationHeader}>
+                <Text style={styles.label}>Verification Status</Text>
+                {!verificationLoading && !verificationStatus?.isVerified && (
+                  <TouchableOpacity 
+                    style={styles.checkEligibilityButton} 
+                    onPress={checkVerificationEligibility}
+                    disabled={checkingVerification}
+                  >
+                    <Text style={styles.checkEligibilityText}>
+                      {checkingVerification ? 'Checking...' : 'Check Eligibility'}
+                    </Text>
+                  </TouchableOpacity>
+                )}
+              </View>
+              
+              {verificationLoading ? (
+                <Text style={styles.loadingText}>Loading status...</Text>
+              ) : (
+                <View style={styles.verificationStatusInfo}>
+                  <View style={[
+                    styles.statusIndicator, 
+                    {backgroundColor: verificationStatus?.isVerified ? '#0095f6' : '#8e8e8e'}
+                  ]} />
+                  <Text style={[
+                    styles.value,
+                    {color: verificationStatus?.isVerified ? '#0095f6' : '#8e8e8e'}
+                  ]}>
+                    {verificationStatus?.isVerified ? 'Verified' : 'Not Verified'}
+                  </Text>
+                </View>
+              )}
+            </View>
           </View>
         </View>
       ) : (
@@ -125,20 +431,18 @@ export default function ProfileScreen() {
 
       {/* Analysis Results Section */}
       <View style={styles.analysisSection}>
-        <Text style={styles.sectionTitle}>Journal Analysis</Text>
+        <View style={styles.sectionHeader}>
+          <Text style={styles.sectionTitle}>Journal Analysis</Text>
+        </View>
         
         {analysisLoading ? (
-          <Text style={styles.loadingText}>Loading analysis data...</Text>
+          <View style={styles.loadingContainer}>
+            <Text style={styles.loadingText}>Loading analysis data...</Text>
+          </View>
         ) : analysisData.length > 0 ? (
           analysisData.map((item, index) => (
             <View key={index} style={styles.analysisCard}>
-              <View style={styles.queryRow}>
-                <Text style={styles.queryLabel}>Journal Entry:</Text>
-                <Text style={styles.queryText}>{item.query_text}</Text>
-              </View>
-              
-              <View style={styles.emotionRow}>
-                <Text style={styles.emotionLabel}>Emotion:</Text>
+              <View style={styles.analysisCardHeader}>
                 <View style={[styles.emotionChip, { backgroundColor: getEmotionColor(item.detected_emotion) }]}>
                   <Text style={styles.emotionText}>{item.detected_emotion}</Text>
                 </View>
@@ -147,29 +451,32 @@ export default function ProfileScreen() {
                 </Text>
               </View>
               
-              <View style={styles.topicRow}>
-                <Text style={styles.topicLabel}>Topic:</Text>
-                <Text style={styles.topicText}>{item.extracted_topic}</Text>
-              </View>
-              
-              <View style={styles.feedbackRow}>
-                <Text style={styles.feedbackLabel}>Feedback:</Text>
+              <View style={styles.analysisContent}>
+                <Text style={styles.queryText} numberOfLines={2} ellipsizeMode="tail">
+                  {item.query_text}
+                </Text>
+                
+                <View style={styles.topicContainer}>
+                  <Text style={styles.topicText}>Topic: {item.extracted_topic}</Text>
+                </View>
+                
                 <Text style={styles.feedbackText}>{item.personalized_feedback}</Text>
               </View>
             </View>
           ))
         ) : (
           <View style={styles.noAnalysis}>
-            <Text style={styles.noAnalysisText}>No analysis data available yet.</Text>
+            <Ionicons name="document-text-outline" size={44} color="#8e8e8e" />
+            <Text style={styles.noAnalysisText}>No journal entries analyzed yet</Text>
             <Text style={styles.noAnalysisSubtext}>
-              Add some journal entries and use the analyze feature to see results here.
+              Add journal entries and use the analyze feature to see insights here
             </Text>
           </View>
         )}
       </View>
 
-      <TouchableOpacity style={styles.button} onPress={handleSignOut}>
-        <Text style={styles.buttonText}>Sign Out</Text>
+      <TouchableOpacity style={styles.signOutButton} onPress={signOut}>
+        <Text style={styles.signOutText}>Sign Out</Text>
       </TouchableOpacity>
     </ScrollView>
   );
@@ -182,348 +489,250 @@ const styles = StyleSheet.create({
   },
   header: {
     alignItems: 'center',
-    padding: 20,
-    borderBottomWidth: 1,
-    borderBottomColor: '#eee',
+    paddingVertical: 30,
+    paddingHorizontal: 20,
+    borderBottomWidth: 0.5,
+    borderBottomColor: '#dbdbdb',
   },
-  title: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#000',
-    marginTop: 10,
+  profileImageContainer: {
+    position: 'relative',
+    marginBottom: 12,
+  },
+  verifiedBadge: {
+    position: 'absolute',
+    bottom: 0,
+    right: 0,
+    backgroundColor: '#0095f6',
+    borderRadius: 12,
+    padding: 2,
+    borderWidth: 2,
+    borderColor: '#fff',
+  },
+  username: {
+    fontSize: 20,
+    fontWeight: '600',
+    color: '#262626',
+    marginBottom: 8,
+  },
+  verifiedPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0, 149, 246, 0.1)',
+    paddingVertical: 4,
+    paddingHorizontal: 10,
+    borderRadius: 20,
+  },
+  verifiedPillText: {
+    color: '#0095f6',
+    fontWeight: '600',
+    fontSize: 12,
+    marginLeft: 4,
   },
   profileInfo: {
-    padding: 20,
+    padding: 16,
+  },
+  infoCard: {
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    padding: 8,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 3.84,
+    elevation: 2,
   },
   infoSection: {
-    marginBottom: 20,
-    padding: 15,
-    backgroundColor: '#f8f9fa',
-    borderRadius: 10,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderBottomWidth: 0.5,
+    borderBottomColor: '#efefef',
   },
   label: {
     fontSize: 14,
-    color: '#666',
-    marginBottom: 5,
+    color: '#8e8e8e',
+    marginBottom: 6,
   },
   value: {
     fontSize: 16,
-    color: '#000',
-    fontWeight: '500',
+    color: '#262626',
+    fontWeight: '400',
+  },
+  actionButtonsContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    paddingVertical: 16,
+    paddingHorizontal: 16,
+    borderBottomWidth: 0.5,
+    borderBottomColor: '#efefef',
+  },
+  actionButton: {
+    borderRadius: 6,
+    paddingVertical: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+    flex: 1,
+  },
+  editButton: {
+    backgroundColor: '#0095f6',
+    margin: 16,
+  },
+  saveButton: {
+    backgroundColor: '#0095f6',
+    marginRight: 8,
+  },
+  cancelButton: {
+    backgroundColor: '#8e8e8e',
+    marginLeft: 8,
+  },
+  actionButtonText: {
+    color: '#fff',
+    fontWeight: '600',
+    fontSize: 14,
+  },
+  loadingContainer: {
+    padding: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  loadingText: {
+    fontSize: 14,
+    color: '#8e8e8e',
   },
   noProfile: {
-    padding: 20,
+    padding: 30,
     alignItems: 'center',
   },
   noProfileText: {
     fontSize: 16,
-    color: '#666',
+    color: '#8e8e8e',
   },
-  button: {
-    backgroundColor: '#007AFF',
-    padding: 15,
-    borderRadius: 10,
-    margin: 20,
+  verificationHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
     alignItems: 'center',
   },
-  buttonText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: 'bold',
+  verificationStatusInfo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 8,
+  },
+  statusIndicator: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    marginRight: 8,
+  },
+  checkEligibilityButton: {
+    backgroundColor: 'transparent',
+  },
+  checkEligibilityText: {
+    color: '#0095f6',
+    fontSize: 12,
+    fontWeight: '600',
   },
   // Analysis Section Styles
   analysisSection: {
-    padding: 20,
-    borderTopWidth: 1,
-    borderTopColor: '#eee',
+    paddingTop: 16,
+    borderTopWidth: 8,
+    borderTopColor: '#f5f5f5',
+  },
+  sectionHeader: {
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderBottomWidth: 0.5,
+    borderBottomColor: '#dbdbdb',
   },
   sectionTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    marginBottom: 15,
-  },
-  loadingText: {
-    textAlign: 'center',
-    color: '#666',
-    padding: 20,
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#262626',
   },
   analysisCard: {
-    backgroundColor: '#f8f9fa',
-    borderRadius: 10,
-    padding: 15,
-    marginBottom: 15,
-    borderLeftWidth: 4,
-    borderLeftColor: '#007AFF',
+    backgroundColor: '#fff',
+    borderBottomWidth: 0.5,
+    borderBottomColor: '#efefef',
   },
-  queryRow: {
-    marginBottom: 10,
-  },
-  queryLabel: {
-    fontSize: 14,
-    fontWeight: 'bold',
-    marginBottom: 5,
-  },
-  queryText: {
-    fontSize: 16,
-  },
-  emotionRow: {
+  analysisCardHeader: {
     flexDirection: 'row',
+    justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 10,
-    flexWrap: 'wrap',
-  },
-  emotionLabel: {
-    fontSize: 14,
-    fontWeight: 'bold',
-    marginRight: 8,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
   },
   emotionChip: {
     paddingVertical: 4,
     paddingHorizontal: 10,
     borderRadius: 20,
-    marginRight: 8,
   },
   emotionText: {
     color: '#fff',
-    fontWeight: 'bold',
+    fontWeight: '600',
+    fontSize: 12,
   },
   confidenceText: {
     fontSize: 12,
-    color: '#666',
+    color: '#8e8e8e',
   },
-  topicRow: {
+  analysisContent: {
+    paddingHorizontal: 16,
+    paddingBottom: 16,
+  },
+  queryText: {
+    fontSize: 14,
+    color: '#262626',
+    marginBottom: 12,
+  },
+  topicContainer: {
     marginBottom: 10,
   },
-  topicLabel: {
-    fontSize: 14,
-    fontWeight: 'bold',
-    marginBottom: 5,
-  },
   topicText: {
-    fontSize: 15,
-  },
-  feedbackRow: {
-    marginTop: 5,
-  },
-  feedbackLabel: {
     fontSize: 14,
-    fontWeight: 'bold',
-    marginBottom: 5,
+    fontWeight: '500',
+    color: '#262626',
   },
   feedbackText: {
-    fontSize: 15,
-    fontStyle: 'italic',
-    color: '#444',
+    fontSize: 14,
+    color: '#262626',
+    lineHeight: 20,
   },
   noAnalysis: {
-    padding: 20,
+    padding: 40,
     alignItems: 'center',
-    backgroundColor: '#f5f5f5',
-    borderRadius: 10,
+    backgroundColor: '#fff',
   },
   noAnalysisText: {
     fontSize: 16,
-    fontWeight: 'bold',
-    marginBottom: 10,
+    fontWeight: '600',
+    color: '#262626',
+    marginTop: 16,
+    marginBottom: 8,
   },
   noAnalysisSubtext: {
     fontSize: 14,
-    color: '#666',
+    color: '#8e8e8e',
     textAlign: 'center',
+    paddingHorizontal: 30,
   },
-});// import { View, Text, StyleSheet, TouchableOpacity, Alert, ScrollView } from 'react-native';
-// import { useAuth } from '../../contexts/AuthContext';
-// import { router } from 'expo-router';
-// import { Ionicons } from '@expo/vector-icons';
-// import { useState, useEffect } from 'react';
-// import { API_URL } from '../../constants';
-
-// export default function ProfileScreen() {
-//   const { signOut, session } = useAuth();
-//   const [userData, setUserData] = useState<any>(null);
-//   const [loading, setLoading] = useState(true);
-
-//   useEffect(() => {
-//     fetchUserData();
-//   }, []);
-
-//   const fetchUserData = async () => {
-//     try {
-//       if (!session?.user?.id) return;
-
-//       const response = await fetch(`${API_URL}/users/${session.user.id}`);
-//       if (!response.ok) {
-//         throw new Error('Failed to fetch user data');
-//       }
-//       const data = await response.json();
-//       setUserData(data);
-//     } catch (error) {
-//       console.error('Error fetching user data:', error);
-//       Alert.alert('Error', 'Failed to load user data');
-//     } finally {
-//       setLoading(false);
-//     }
-//   };
-
-//   const handleSignOut = async () => {
-//     try {
-//       setLoading(true);
-//       await signOut();
-//       // The root layout will handle the navigation after session is cleared
-//     } catch (error) {
-//       console.error('Sign out error:', error);
-//       Alert.alert('Error', 'Failed to sign out. Please try again.');
-//     } finally {
-//       setLoading(false);
-//     }
-//   };
-
-//   return (
-//     <ScrollView style={styles.container}>
-//       <View style={styles.header}>
-//         <Ionicons name="person-circle-outline" size={80} color="#007AFF" />
-//         <Text style={styles.title}>Profile</Text>
-//       </View>
-
-//       {loading ? (
-//         <View style={styles.noProfile}>
-//           <Text style={styles.noProfileText}>Loading profile...</Text>
-//         </View>
-//       ) : userData ? (
-//         <View style={styles.profileInfo}>
-//           <View style={styles.infoSection}>
-//             <Text style={styles.label}>Display Name</Text>
-//             <Text style={styles.value}>{userData.display_name}</Text>
-//           </View>
-
-//           <View style={styles.infoSection}>
-//             <Text style={styles.label}>Email</Text>
-//             <Text style={styles.value}>{userData.email}</Text>
-//           </View>
-
-//           <View style={styles.infoSection}>
-//             <Text style={styles.label}>Member Since</Text>
-//             <Text style={styles.value}>
-//               {new Date(userData.created_at).toLocaleDateString()}
-//             </Text>
-//           </View>
-
-//           <View style={styles.infoSection}>
-//             <Text style={styles.label}>User ID</Text>
-//             <Text style={styles.value}>{userData.id}</Text>
-//           </View>
-//         </View>
-//       ) : (
-//         <View style={styles.noProfile}>
-//           <Text style={styles.noProfileText}>No profile found</Text>
-//         </View>
-//       )}
-
-//       <TouchableOpacity style={styles.button} onPress={handleSignOut}>
-//         <Text style={styles.buttonText}>Sign Out</Text>
-//       </TouchableOpacity>
-//     </ScrollView>
-//   );
-// }
-
-// const styles = StyleSheet.create({
-//   container: {
-//     flex: 1,
-//     backgroundColor: '#fff',
-//   },
-//   header: {
-//     alignItems: 'center',
-//     padding: 20,
-//     borderBottomWidth: 1,
-//     borderBottomColor: '#eee',
-//   },
-//   title: {
-//     fontSize: 24,
-//     fontWeight: 'bold',
-//     color: '#000',
-//     marginTop: 10,
-//   },
-//   profileInfo: {
-//     padding: 20,
-//   },
-//   infoSection: {
-//     marginBottom: 20,
-//     padding: 15,
-//     backgroundColor: '#f8f9fa',
-//     borderRadius: 10,
-//   },
-//   label: {
-//     fontSize: 14,
-//     color: '#666',
-//     marginBottom: 5,
-//   },
-//   value: {
-//     fontSize: 16,
-//     color: '#000',
-//     fontWeight: '500',
-//   },
-//   noProfile: {
-//     padding: 20,
-//     alignItems: 'center',
-//   },
-//   noProfileText: {
-//     fontSize: 16,
-//     color: '#666',
-//   },
-//   button: {
-//     backgroundColor: '#007AFF',
-//     padding: 15,
-//     borderRadius: 10,
-//     margin: 20,
-//     alignItems: 'center',
-//   },
-//   buttonText: {
-//     color: '#fff',
-//     fontSize: 16,
-//     fontWeight: 'bold',
-//   },
-// }); 
-
-// import React, { useState } from 'react';
-// import { Alert, Button } from 'react-native';
-// import { useRouter } from 'expo-router';
-// import { useAuth } from '../../contexts/AuthContext';
-
-// const ProfileScreen = () => {
-//   const router = useRouter();
-//   const { signOut } = useAuth();
-//   const [loading, setLoading] = useState(false);
-//   const [user, setUser] = useState(null);
-
-//   const handleSignOut = async () => {
-//     try {
-//       setLoading(true);
-//       console.log('Starting sign out process...');
-      
-//       // Call signOut from AuthContext
-//       await signOut();
-      
-//       // Clear any local state
-//       setUser(null);
-      
-//       // Force a reload of the app to clear all state
-//       router.replace('/(auth)/sign-in');
-      
-//       console.log('Sign out completed, redirected to sign-in');
-//     } catch (error) {
-//       console.error('Sign out error:', error);
-//       Alert.alert(
-//         'Sign Out Failed',
-//         'There was an error signing out. Please try again.'
-//       );
-//     } finally {
-//       setLoading(false);
-//     }
-//   };
-
-//   return (
-//     <Button title="Sign Out" onPress={handleSignOut} disabled={loading} />
-//   );
-// };
-
-// export default ProfileScreen; 
+  input: {
+    borderWidth: 1,
+    borderColor: '#dbdbdb',
+    borderRadius: 4,
+    padding: 10,
+    fontSize: 16,
+    color: '#262626',
+    backgroundColor: '#fafafa',
+  },
+  signOutButton: {
+    margin: 20,
+    padding: 12,
+    borderWidth: 1,
+    borderColor: '#dbdbdb',
+    borderRadius: 4,
+    alignItems: 'center',
+  },
+  signOutText: {
+    color: '#ed4956',
+    fontWeight: '600',
+    fontSize: 14,
+  },
+});

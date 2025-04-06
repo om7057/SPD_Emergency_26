@@ -2,18 +2,22 @@ import { createContext, useContext, useEffect, useState } from 'react';
 import { Session, User as SupabaseUser } from '@supabase/supabase-js';
 import { supabase } from '../lib/supabase';
 
-// Define your server URL
-const API_URL = 'http://192.168.50.229:3000/api';
+// API URL for the backend server
+const API_URL = 'http://192.168.95.229:3000/api';
 
 interface UserProfile extends SupabaseUser {
-  display_name: string;
+  display_name?: string;
+  age?: number;
+  gender?: string;
+  created_at?: string;
+  updated_at?: string;
 }
 
 interface AuthContextType {
   session: Session | null;
   user: UserProfile | null;
   signIn: (email: string, password: string) => Promise<void>;
-  signUp: (email: string, password: string, displayName: string) => Promise<void>;
+  signUp: (email: string, password: string, displayName: string, age: number, gender: string) => Promise<void>;
   signOut: () => Promise<void>;
   loading: boolean;
   fetchUserProfile: () => Promise<void>;
@@ -65,50 +69,52 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
-  const signUp = async (email: string, password: string, displayName: string) => {
-    try {
-      console.log('Attempting signup with:', { email, displayName });
-      const response = await fetch(`${API_URL}/signup`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ email, password, displayName }),
-      });
+ const signUp = async (
+  email: string,
+  password: string,
+  displayName: string,
+  age: number,
+  gender: string
+) => {
+  try {
+    console.log('Attempting signup with:', { email, displayName, age, gender });
 
-      // First check if the response is ok
-      if (!response.ok) {
-        // Try to parse the error message
-        let errorMessage = 'Failed to sign up';
-        try {
-          const errorData = await response.json();
-          errorMessage = errorData.error || errorMessage;
-        } catch (e) {
-          // If we can't parse the error as JSON, get the text
-          errorMessage = await response.text();
-        }
-        console.error('Server error response:', errorMessage);
-        throw new Error(errorMessage);
+    const response = await fetch(`${API_URL}/signup`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ email, password, displayName, age, gender }),
+    });
+
+    if (!response.ok) {
+      let errorMessage = 'Failed to sign up';
+      try {
+        const errorData = await response.json();
+        errorMessage = errorData.error || errorMessage;
+      } catch (e) {
+        errorMessage = await response.text();
       }
-
-      // If response is ok, try to parse the JSON
-      const data = await response.json();
-      console.log('Server response:', data);
-
-      if (!data.session || !data.user) {
-        console.error('Invalid response structure:', data);
-        throw new Error('Invalid response from server');
-      }
-
-      // Set the session and user profile
-      setSession(data.session);
-      setUser(data.user);
-      console.log('Signup successful:', { session: data.session, user: data.user });
-    } catch (error) {
-      console.error('Signup error:', error);
-      throw error;
+      console.error('Server error response:', errorMessage);
+      throw new Error(errorMessage);
     }
-  };
+
+    const data = await response.json();
+    console.log('Server response:', data);
+
+    if (!data.user) {
+      console.error('Invalid response structure:', data);
+      throw new Error('Invalid response from server');
+    }
+
+    // You can store user info if needed (your logic)
+    setUser(data.user);
+    console.log('Signup successful:', { user: data.user });
+  } catch (error) {
+    console.error('Signup error:', error);
+    throw error;
+  }
+};
 
   const signIn = async (email: string, password: string) => {
     const { error } = await supabase.auth.signInWithPassword({

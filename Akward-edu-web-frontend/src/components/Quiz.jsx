@@ -76,26 +76,36 @@ const Quiz = () => {
       return;
     }
 
-    const payload = {
-      userId: mongoUser._id,
-      story: storyId,
-      score: calculatedScore,
-      topic: storyMeta.topic?._id,
-      level: storyMeta.level?._id,
-    };
-
+    // 📌 Add this inside handleSubmit (after leaderboard call)
     try {
-      const response = await fetch("http://localhost:5000/api/leaderboard", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      });
+      const progressPayload = {
+        userId: mongoUser._id,
+        story: storyId,
+        score: calculatedScore,
+        totalQuestions: quizList.length,
+        topic: storyMeta.topic?._id,
+        level: storyMeta.level?._id,
+        answers: quizList.map((quiz) => ({
+          quizId: quiz._id,
+          selectedAnswer: answers[quiz._id] || null,
+          isCorrect: answers[quiz._id] === quiz.correctAnswer,
+        })),
+      };
 
-      if (!response.ok) throw new Error("Leaderboard submission failed");
+      const progressRes = await fetch(
+        "http://localhost:5000/api/quiz-progress",
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(progressPayload),
+        }
+      );
 
-      console.log("Leaderboard updated successfully!");
+      if (!progressRes.ok) throw new Error("Failed to save quiz progress");
+
+      console.log("✅ Quiz progress saved successfully!");
     } catch (err) {
-      console.error("Error submitting to leaderboard:", err);
+      console.error("Error saving quiz progress:", err);
     }
   };
 
@@ -127,7 +137,9 @@ const Quiz = () => {
                   <p className="font-semibold mb-3 text-blue-600">
                     Question {currentIndex + 1} of {total}
                   </p>
-                  <p className="text-xl font-bold mb-4 text-gray-800">{currentQuiz.question}</p>
+                  <p className="text-xl font-bold mb-4 text-gray-800">
+                    {currentQuiz.question}
+                  </p>
                   <div className="grid gap-3">
                     {currentQuiz.options.map((option, idx) => {
                       return (
@@ -153,7 +165,9 @@ const Quiz = () => {
 
                 <div className="flex justify-between items-center">
                   <button
-                    onClick={() => setCurrentIndex((prev) => Math.max(prev - 1, 0))}
+                    onClick={() =>
+                      setCurrentIndex((prev) => Math.max(prev - 1, 0))
+                    }
                     disabled={currentIndex === 0}
                     className="px-6 py-3 bg-gray-100 hover:bg-gray-200 rounded-full disabled:opacity-50 font-bold text-gray-600 border-2 border-gray-300 transition-all flex items-center"
                   >
@@ -169,7 +183,9 @@ const Quiz = () => {
                     </button>
                   ) : (
                     <button
-                      onClick={() => setCurrentIndex((prev) => Math.min(prev + 1, total - 1))}
+                      onClick={() =>
+                        setCurrentIndex((prev) => Math.min(prev + 1, total - 1))
+                      }
                       className="px-6 py-3 bg-gradient-to-r from-blue-500 to-purple-500 text-white rounded-full hover:from-blue-600 hover:to-purple-600 font-bold transition-all flex items-center shadow-md"
                     >
                       Next <span className="ml-1">▶️</span>

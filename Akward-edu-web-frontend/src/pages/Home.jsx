@@ -1,44 +1,12 @@
-import React, { useState, useEffect } from "react";
+import React from "react";
 import { useUser } from "@clerk/clerk-react";
 
 function Home() {
   const { user, isSignedIn } = useUser();
-  const [userData, setUserData] = useState(null);
-  const [loading, setLoading] = useState(true);
 
   console.log("🔹 Rendering Home Component...");
   console.log("🔹 User from Clerk:", user);
   console.log("🔹 User signed in:", isSignedIn);
-
-  useEffect(() => {
-    const fetchUserProgress = async () => {
-      if (!user) {
-        console.warn("⚠️ No user found, skipping API call.");
-        return;
-      }
-
-      console.log("✅ Fetching user progress for Clerk ID:", user.id);
-
-      try {
-        const response = await fetch(`http://localhost:5000/api/users/${user.id}`);
-        console.log("✅ Response status:", response.status);
-
-        if (!response.ok) {
-          throw new Error("❌ Failed to fetch user progress");
-        }
-
-        const data = await response.json();
-        console.log("✅ Fetched User Data:", data);
-        setUserData(data);
-      } catch (error) {
-        console.error("❌ Error fetching user progress:", error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchUserProgress();
-  }, [user]);
 
   return (
     <div className="p-4 md:p-6">
@@ -67,20 +35,6 @@ function Home() {
         </div>
       ) : (
         <p className="text-red-500">User not logged in.</p>
-      )}
-
-      {/* Loading State */}
-      {loading ? (
-        <p className="text-center text-gray-600 mt-4">Loading user progress...</p>
-      ) : userData ? (
-        <div className="mt-6 bg-gray-100 p-4 rounded-lg">
-          <h2 className="text-lg font-semibold">Your Progress</h2>
-          <p>Stars: {userData.currentStars}</p>
-          <p>Completed Levels: {userData.completedLevels.length}</p>
-          <p>Completed Stories: {userData.completedStories.length}</p>
-        </div>
-      ) : (
-        <p className="text-red-500 text-center mt-4">No progress found.</p>
       )}
     </div>
   );

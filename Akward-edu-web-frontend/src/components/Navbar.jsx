@@ -6,6 +6,7 @@ const Navbar = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const location = useLocation();
 
+  // Navigation links with child-friendly icons
   const navLinks = [
     { name: "Home", path: "/", icon: "🏠" },
     { name: "Topics", path: "/topics", icon: "📚" },
@@ -17,11 +18,13 @@ const Navbar = () => {
     <nav className="bg-gradient-to-r from-blue-500 to-purple-500 shadow-lg">
       <div className="max-w-6xl mx-auto px-4">
         <div className="flex justify-between items-center h-16">
+          {/* Logo and App name */}
           <Link to="/" className="flex items-center space-x-2 transform hover:scale-105 transition-all">
             <span className="text-2xl">🌟</span>
             <span className="text-xl font-bold text-white">Kids Learning Hub</span>
           </Link>
 
+          {/* Desktop Navigation */}
           <div className="hidden md:flex space-x-2">
             {navLinks.map((link) => (
               <Link
@@ -39,6 +42,7 @@ const Navbar = () => {
             ))}
           </div>
 
+          {/* Auth buttons / User profile */}
           <div className="flex items-center space-x-3">
             <SignedOut>
               <Link 
@@ -68,6 +72,7 @@ const Navbar = () => {
               </div>
             </SignedIn>
 
+            {/* Mobile menu button */}
             <button
               onClick={() => setIsMenuOpen(!isMenuOpen)}
               className="md:hidden text-white focus:outline-none bg-purple-600 bg-opacity-30 p-2 rounded-full transform hover:scale-105 transition-all"
@@ -81,6 +86,7 @@ const Navbar = () => {
           </div>
         </div>
 
+        {/* Mobile Navigation */}
         {isMenuOpen && (
           <div className="md:hidden py-3 pb-4 border-t border-white border-opacity-20">
             <div className="flex flex-col space-y-2">

@@ -24,7 +24,7 @@ const QuizLandingPage = () => {
 
         setStoriesWithQuiz(filtered);
       } catch (err) {
-        console.error("Error fetching stories with quizzes:", err);
+        console.error("❌ Error fetching stories with quizzes:", err);
       } finally {
         setLoading(false);
       }

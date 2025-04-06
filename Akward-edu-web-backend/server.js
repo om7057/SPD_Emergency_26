@@ -9,7 +9,7 @@ import levelRoutes from './routes/levelRoutes.js';
 import storyRoutes from './routes/storyRoutes.js';
 import quizRoutes from './routes/quizRoutes.js';
 import leaderboardRoutes from './routes/leaderboardRoutes.js';
-import userStoryProgressRoutes from './routes/userStoryProgressRoutes.js';
+import progressRoutes from './routes/progressRoutes.js'
 import newsStoryRoutes from './routes/newsStoryRoutes.js';
 
 
@@ -27,22 +27,24 @@ app.use(cors({
 }));
 app.use(express.json());
 
+// Logging
 app.use((req, res, next) => {
   console.log(`${req.method} ${req.url}`);
   next();
 });
 
-//Routes
+// ✅ Routes
 app.use('/api/users', userRoutes);
 app.use('/api/topics', topicRoutes);
 app.use('/api/stories', storyRoutes);
 app.use('/api/levels', levelRoutes);
 app.use('/api/quiz', quizRoutes);
 app.use('/api/leaderboard', leaderboardRoutes);
-app.use('/api/progress', userStoryProgressRoutes);
 app.use('/api/news-stories', newsStoryRoutes);
+app.use('/api/quiz-progress', progressRoutes)
 
 
+// ✅ ⬇️ Moved these to the bottom (important!)
 app.use((req, res) => {
   res.status(404).json({ message: 'Route not found' });
 });

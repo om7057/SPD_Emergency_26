@@ -21,6 +21,7 @@ const EmotionTracker = ({ userId, storyId, quizActive, onEmotionDataUpdate }) =>
         });
     }
 
+    // Cleanup: Stop webcam when component unmounts or quiz ends
     return () => {
       if (videoRef.current && videoRef.current.srcObject) {
         videoRef.current.srcObject.getTracks().forEach((track) => track.stop());
@@ -28,6 +29,7 @@ const EmotionTracker = ({ userId, storyId, quizActive, onEmotionDataUpdate }) =>
     };
   }, [quizActive, videoRef]);
 
+  // Send emotion data to parent component when it updates
   useEffect(() => {
     if (onEmotionDataUpdate) {
       onEmotionDataUpdate(emotionTimeline);
@@ -35,6 +37,7 @@ const EmotionTracker = ({ userId, storyId, quizActive, onEmotionDataUpdate }) =>
   }, [emotionTimeline, onEmotionDataUpdate]);
 
   return (
+    // <div style={{ display: "none" }}>
     <div>
       <video
         ref={videoRef}

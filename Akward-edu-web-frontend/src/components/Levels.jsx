@@ -38,7 +38,8 @@ const Levels = () => {
     fetchLevels();
   }, [topicId]);
 
-const levelColors = [
+  // Level colors to make it more engaging
+  const levelColors = [
     "from-blue-400 to-blue-500",
     "from-green-400 to-green-500",
     "from-yellow-400 to-yellow-500",
@@ -47,6 +48,7 @@ const levelColors = [
     "from-indigo-400 to-indigo-500",
   ];
 
+  // Level icons to make it visually appealing for kids
   const getLevelEmoji = (levelNum) => {
     const emojis = ["🌱", "🌿", "🌲", "🌳", "🌴", "⭐", "🏆"];
     return emojis[levelNum % emojis.length];
@@ -55,6 +57,7 @@ const levelColors = [
   return (
     <div className="min-h-screen bg-gradient-to-b from-blue-50 to-purple-50 p-6">
       <div className="max-w-4xl mx-auto">
+        {/* Back button */}
         <button 
           onClick={() => navigate(-1)}
           className="mb-6 flex items-center text-indigo-600 hover:text-indigo-800 transition"
@@ -62,6 +65,7 @@ const levelColors = [
           <span className="mr-1">←</span> Back to Topics
         </button>
 
+        {/* Header */}
         <div className="mb-8 text-center">
           <h1 className="text-3xl font-bold mb-2 text-indigo-800">
             Learning Journey: {topicName}
@@ -69,6 +73,7 @@ const levelColors = [
           <p className="text-gray-600">Choose your adventure level! Each level has new stories and activities.</p>
         </div>
 
+        {/* Loading state */}
         {loading && (
           <div className="flex justify-center items-center h-64">
             <div className="text-center">
@@ -78,6 +83,7 @@ const levelColors = [
           </div>
         )}
 
+        {/* Error state */}
         {error && (
           <div className="bg-red-100 p-4 rounded-lg text-center">
             <p className="text-red-700">{error}</p>
@@ -90,6 +96,7 @@ const levelColors = [
           </div>
         )}
 
+        {/* Levels grid */}
         {!loading && !error && (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {levels.length > 0 ? (

@@ -4,6 +4,7 @@ const Sidebar = () => {
   const navigate = useNavigate();
   const location = useLocation();
   
+  // Navigation items
   const sidebarItems = [
     { name: "Safety Stories", path: "/story-learning", icon: "📖" },
     { name: "Safety Heroes", path: "/leaderboard", icon: "🏆" },

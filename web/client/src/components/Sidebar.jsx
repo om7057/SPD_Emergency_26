@@ -10,7 +10,7 @@ const Sidebar = ({ onClose, isMobile }) => {
     { name: "Home", path: "/", icon: <Home className="w-5 h-5" /> },
     { name: "Safety Stories", path: "/story-learning", icon: <BookOpen className="w-5 h-5" /> },
     { name: "Leaderboard", path: "/leaderboard", icon: <BarChart3 className="w-5 h-5" /> },
-    { name: "Latest News", path: "/latest-updates", icon: <Newspaper className="w-5 h-5" /> },
+    { name: "Live", path: "/live", icon: <Newspaper className="w-5 h-5" /> },
     { name: "Quiz Games", path: "/quizzes", icon: <Lightbulb className="w-5 h-5" /> },
   ];
 
@@ -31,7 +31,7 @@ const Sidebar = ({ onClose, isMobile }) => {
               <Shield className="w-5 h-5 text-white" />
             </div>
             <div>
-              <h2 className="text-lg font-bold text-gray-900">SafetyBuddies</h2>
+              <h2 className="text-lg font-bold text-gray-900">Safe Space</h2>
               <p className="text-xs text-gray-500">Learn & Stay Safe</p>
             </div>
           </div>

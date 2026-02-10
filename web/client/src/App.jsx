@@ -8,7 +8,7 @@ import ProfilePage from "./pages/ProfilePage";
 import Levels from "./components/Levels";
 import Quiz from "./components/Quiz";
 import Leaderboard from "./components/LeaderBoard";
-import LatestNews from "./components/LatestNews";
+import Live from "./components/Live";
 import StoryPlayer from "./components/StoryPlayer";
 import StoryLearning from "./components/StoryLearning";
 import Stories from "./components/Stories";
@@ -149,11 +149,11 @@ const App = () => {
         />
 
         <Route
-          path="/latest-updates"
+          path="/live"
           element={
             <SignedIn>
               <Layout setIsLoading={handleLoading}>
-                <LatestNews />
+                <Live />
               </Layout>
             </SignedIn>
           }

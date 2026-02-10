@@ -70,7 +70,7 @@ const Layout = ({ children }) => {
             </button>
             
             <div className="hidden sm:block">
-              <h1 className="text-xl font-semibold text-sky-600">SafetyBuddies</h1>
+              <h1 className="text-xl font-semibold text-sky-600">Safe Space</h1>
             </div>
           </div>
 

@@ -15,7 +15,7 @@ const Login = () => {
           <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-sky-600 mb-4">
             <Shield className="w-8 h-8 text-white" />
           </div>
-          <h1 className="text-3xl font-bold text-gray-900">SafetyBuddies</h1>
+          <h1 className="text-3xl font-bold text-gray-900">Safe Space</h1>
           <p className="text-gray-500 mt-2">Learn. Play. Stay Safe.</p>
         </div>
 

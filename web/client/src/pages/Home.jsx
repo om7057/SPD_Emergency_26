@@ -33,7 +33,7 @@ function Home() {
       path: "/leaderboard"
     },
     {
-      title: "Latest News",
+      title: "Live Updates",
       description: "Stay updated on safety",
       icon: <Newspaper className="w-6 h-6" />,
       bgColor: "bg-emerald-50",

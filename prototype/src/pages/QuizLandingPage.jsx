@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { Lightbulb, BookOpen, Play, Search, Loader2, Info } from "lucide-react";
+import { API_CONFIG } from "../config/api";
 
 const QuizLandingPage = () => {
   const [storiesWithQuiz, setStoriesWithQuiz] = useState([]);
@@ -10,13 +11,13 @@ const QuizLandingPage = () => {
     const fetchStories = async () => {
       setLoading(true);
       try {
-        const res = await fetch("http://localhost:5000/api/stories");
+        const res = await fetch(API_CONFIG.STORIES);
         const allStories = await res.json();
 
         const filtered = [];
 
         for (const story of allStories) {
-          const quizRes = await fetch(`http://localhost:5000/api/quiz/story/${story._id}`);
+          const quizRes = await fetch(API_CONFIG.QUIZ_BY_STORY(story._id));
           const quizData = await quizRes.json();
           if (Array.isArray(quizData) && quizData.length > 0) {
             filtered.push(story);

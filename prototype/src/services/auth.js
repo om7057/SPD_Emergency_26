@@ -1,7 +1,7 @@
-const API_URL = "http://localhost:5000/api/users";
+import { API_CONFIG } from '../config/api';
 
 export const registerUser = async (user) => {
-  const res = await fetch(API_URL, {
+  const res = await fetch(API_CONFIG.USERS, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(user),
@@ -10,6 +10,6 @@ export const registerUser = async (user) => {
 };
 
 export const fetchUser = async (clerkId) => {
-  const res = await fetch(`${API_URL}/${clerkId}`);
+  const res = await fetch(API_CONFIG.USER(clerkId));
   return res.json();
 };

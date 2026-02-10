@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Shield, Scale, Briefcase, Hand, Lock, BookOpen, Frown, ChevronRight } from "lucide-react";
+import { API_CONFIG } from "../config/api";
 
 const StoryLearning = () => {
   const [topics, setTopics] = useState([]);
@@ -9,7 +10,7 @@ const StoryLearning = () => {
 
   useEffect(() => {
     setLoading(true);
-    fetch("http://localhost:5000/api/topics")
+    fetch(API_CONFIG.TOPICS)
       .then((res) => res.json())
       .then((data) => {
         setTopics(data);

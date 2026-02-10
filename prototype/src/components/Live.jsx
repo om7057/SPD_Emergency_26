@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { Newspaper, Globe, TreePine, Heart, School, CheckCircle, AlertCircle, Sparkles, Loader2, Search, ChevronLeft, ChevronRight, BookOpen, Play, X, Image as ImageIcon } from "lucide-react";
+import { API_CONFIG } from "../config/api";
 
 const Live = () => {
   const [articles, setArticles] = useState([]);
@@ -17,7 +18,7 @@ const Live = () => {
     const fetchNews = async () => {
       try {
         setLoadingNews(true);
-        const response = await fetch("http://localhost:8000/api/news");
+        const response = await fetch(API_CONFIG.NEWS);
         const data = await response.json();
         setArticles(data.articles || []);
       } catch (err) {
@@ -35,7 +36,7 @@ const Live = () => {
     const fetchSavedStories = async () => {
       try {
         setLoadingStories(true);
-        const response = await fetch("http://localhost:8000/api/news-stories");
+        const response = await fetch(API_CONFIG.NEWS_STORIES);
         const data = await response.json();
         setSavedStories(data);
       } catch (err) {
@@ -55,7 +56,7 @@ const Live = () => {
 
     try {
       const response = await fetch(
-        `http://localhost:8000/api/generate-story?article_index=${index}`,
+        API_CONFIG.GENERATE_STORY(index),
         { method: "POST" }
       );
 
@@ -86,7 +87,7 @@ const Live = () => {
       };
 
       const saveResponse = await fetch(
-        "http://localhost:8000/api/news-stories",
+        API_CONFIG.NEWS_STORIES,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },

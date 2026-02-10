@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { ChevronLeft, BookOpen, Lightbulb, Zap, Star, Sparkles, BadgeCheck, AlertCircle, Search, ChevronRight } from "lucide-react";
+import { API_CONFIG } from "../config/api";
 
 const Levels = () => {
   const { topicId } = useParams();
@@ -13,9 +14,11 @@ const Levels = () => {
   useEffect(() => {
     const fetchTopic = async () => {
       try {
-        const response = await fetch(`http://localhost:5000/api/topics/${topicId}`);
-        const data = await response.json();
-        setTopicName(data.name || "Topic");
+        const response = await fetch(API_CONFIG.TOPICS);
+        // Get topic name from the topics list
+        const topicsData = await response.json();
+        const currentTopic = topicsData.find(t => t._id === topicId);
+        setTopicName(currentTopic?.name || "Topic");
       } catch (err) {
         console.error("Error fetching topic details", err);
       }
@@ -24,7 +27,7 @@ const Levels = () => {
     const fetchLevels = async () => {
       try {
         setLoading(true);
-        const response = await fetch(`http://localhost:5000/api/levels/topic/${topicId}`);
+        const response = await fetch(API_CONFIG.LEVELS(topicId));
         const data = await response.json();
         setLevels(data);
         setLoading(false);

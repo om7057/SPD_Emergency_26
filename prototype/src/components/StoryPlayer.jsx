@@ -3,6 +3,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import useEmotionDetection from "../components/useEmotionDetection";
 import EmotionChart from "./EmotionChart";
 import { Loader2, AlertCircle, Search, Sparkles, ChevronLeft, Lightbulb, Video, AlertTriangle, X } from "lucide-react";
+import { API_CONFIG } from "../config/api";
 
 const StoryPlayer = () => {
   const { storyId } = useParams();
@@ -26,7 +27,7 @@ const StoryPlayer = () => {
   useEffect(() => {
     const fetchStory = async () => {
       try {
-        const res = await fetch(`http://localhost:5000/api/stories/${storyId}`);
+        const res = await fetch(API_CONFIG.STORY(storyId));
         if (!res.ok) throw new Error("Failed to fetch story");
         const data = await res.json();
         setStory(data);

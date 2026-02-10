@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { Trophy, Medal, Award, Info, Users, RefreshCw } from "lucide-react";
+import { API_CONFIG } from "../config/api";
 
 const Leaderboard = () => {
   const [users, setUsers] = useState([]);
@@ -16,9 +17,9 @@ const Leaderboard = () => {
       try {
         console.log("📢 Fetching initial leaderboard data...");
         const responses = await Promise.all([
-          fetch("http://localhost:5000/api/users"),
-          fetch("http://localhost:5000/api/stories"),
-          fetch("http://localhost:5000/api/leaderboard"),
+          fetch(API_CONFIG.USERS),
+          fetch(API_CONFIG.STORIES),
+          fetch(API_CONFIG.LEADERBOARD),
         ]);
 
         if (responses.some((res) => !res.ok)) {
@@ -53,9 +54,9 @@ const Leaderboard = () => {
     const fetchLeaderboard = async () => {
       setIsLoading(true);
       try {
-        let url = "http://localhost:5000/api/leaderboard";
+        let url = API_CONFIG.LEADERBOARD;
         if (selectedStory) {
-          url = `http://localhost:5000/api/leaderboard/story/${selectedStory}`;
+          url = API_CONFIG.LEADERBOARD_BY_STORY(selectedStory);
         }
 
         console.log(`📢 Fetching leaderboard for story: ${selectedStory || "All"}`);

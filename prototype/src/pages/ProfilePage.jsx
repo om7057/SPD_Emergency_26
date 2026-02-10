@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import { useUser, useClerk } from "@clerk/clerk-react";
 import { useNavigate } from "react-router-dom";
 import { BarChart3, LogOut, CheckCircle, ArrowLeft } from "lucide-react";
+import { API_CONFIG } from "../config/api";
 
 const ProfilePage = () => {
   const { user } = useUser();
@@ -21,7 +22,7 @@ const ProfilePage = () => {
       if (!user) return;
 
       try {
-        const response = await fetch(`http://localhost:5000/api/quiz-progress/user/${user.id}`);
+        const response = await fetch(API_CONFIG.QUIZ_PROGRESS(user.id));
         if (!response.ok) throw new Error("Failed to fetch user progress");
 
         const data = await response.json();
